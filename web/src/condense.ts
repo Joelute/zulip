@@ -1,6 +1,9 @@
 import $ from "jquery";
 import assert from "minimalistic-assert";
 
+import render_message_expender from "../templates/message_expander.hbs";
+
+import {$t} from "./i18n";
 import * as message_flags from "./message_flags";
 import * as message_lists from "./message_lists";
 import type {Message} from "./message_store";
@@ -20,24 +23,20 @@ This library implements two related, similar concepts:
 */
 
 function show_more_link($row: JQuery): void {
-    $row.find(".message_condenser").hide();
-    $row.find(".message_expander").show();
+    $row.find(".message_expander").text($t({defaultMessage: "Show more"}));
 }
 
 function show_condense_link($row: JQuery): void {
-    $row.find(".message_expander").hide();
-    $row.find(".message_condenser").show();
+    $row.find(".message_expander").text($t({defaultMessage: "Show less"}));
 }
 
 function condense_row($row: JQuery): void {
-    const $content = $row.find(".message_content");
-    $content.addClass("condensed");
+    $row.find(".message_content").addClass("condensed");
     show_more_link($row);
 }
 
 function uncondense_row($row: JQuery): void {
-    const $content = $row.find(".message_content");
-    $content.removeClass("condensed");
+    $row.find(".message_content").removeClass("condensed");
     show_condense_link($row);
 }
 
@@ -64,7 +63,7 @@ export function uncollapse(message: Message): void {
             condense_row($row);
         } else {
             // This was a short message, no more need for a [More] link.
-            $row.find(".message_expander").hide();
+            remove_message_expander($row);
         }
     };
 
@@ -131,16 +130,12 @@ export function toggle_collapse(message: Message): void {
         if (is_condensable) {
             message.condensed = true;
             $content.addClass("condensed");
-            show_message_expander($row);
-            $row.find(".message_condenser").hide();
         }
         uncollapse(message);
     } else {
         if (is_condensed) {
             message.condensed = false;
             $content.removeClass("condensed");
-            hide_message_expander($row);
-            $row.find(".message_condenser").show();
         } else {
             collapse(message);
         }
@@ -154,28 +149,12 @@ function get_message_height(elem: HTMLElement): number {
     return $(elem).find(".message_content")[0]!.scrollHeight;
 }
 
-export function hide_message_expander($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_expander").hide();
-    }
+export function remove_message_expander($row: JQuery): void {
+    $row.find(".message_length_controller").empty();
 }
 
-export function hide_message_condenser($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_condenser").hide();
-    }
-}
-
-export function show_message_expander($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_expander").show();
-    }
-}
-
-export function show_message_condenser($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_condenser").show();
-    }
+export function render_message_expander($row: JQuery): void {
+    $row.find(".message_length_controller").html(render_message_expender());
 }
 
 export function condense_and_collapse(elems: JQuery): void {
@@ -222,11 +201,14 @@ export function condense_and_collapse(elems: JQuery): void {
     // More information here: https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/#avoid-layout-thrashing
     for (const {elem, $content, message, message_height} of rows_to_resize) {
         const long_message = message_height > height_cutoff;
+
         if (long_message) {
             // All long messages are flagged as such.
             $content.addClass("could-be-condensed");
+            render_message_expander($(elem));
         } else {
             $content.removeClass("could-be-condensed");
+            remove_message_expander($(elem));
         }
 
         // If message.condensed is defined, then the user has manually
@@ -246,14 +228,12 @@ export function condense_and_collapse(elems: JQuery): void {
             condense_row($(elem));
         } else {
             $content.removeClass("condensed");
-            $(elem).find(".message_expander").hide();
         }
 
         // Completely hide the message and replace it with a "Show more"
         // button if the user has collapsed it.
         if (message.collapsed) {
             $content.addClass("collapsed");
-            $(elem).find(".message_expander").show();
         }
     }
 }
@@ -276,24 +256,12 @@ export function initialize(): void {
         } else if ($content.hasClass("condensed")) {
             // Uncondense (show the full long message).
             message.condensed = false;
-            $content.removeClass("condensed");
-            $(this).hide();
-            $row.find(".message_condenser").show();
+            uncondense_row($row);
+        } else if (!$content.hasClass("condensed")) {
+            // Condense (show the condensed message).
+            message.condensed = true;
+            condense_row($row);
         }
-        e.stopPropagation();
-        e.preventDefault();
-    });
-
-    $("#message_feed_container").on("click", ".message_condenser", function (this: HTMLElement, e) {
-        const $row = $(this).closest(".message_row");
-        const id = rows.id($row);
-        // Focus on the condensed message.
-        assert(message_lists.current !== undefined);
-        message_lists.current.select_id(id);
-        const message = message_lists.current.get(id);
-        assert(message !== undefined);
-        message.condensed = true;
-        condense_row($row);
         e.stopPropagation();
         e.preventDefault();
     });
