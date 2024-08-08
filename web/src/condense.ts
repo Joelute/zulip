@@ -223,6 +223,7 @@ export function condense_and_collapse(elems: JQuery): void {
     for (const {elem, $content, message, message_height} of rows_to_resize) {
         const long_message = message_height > height_cutoff;
         if (long_message) {
+            console.log($content);
             // All long messages are flagged as such.
             $content.addClass("could-be-condensed");
         } else {
