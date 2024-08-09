@@ -7,6 +7,7 @@ import type {Message} from "./message_store";
 import * as message_viewport from "./message_viewport";
 import * as rows from "./rows";
 
+
 /*
 This library implements two related, similar concepts:
 
@@ -222,12 +223,18 @@ export function condense_and_collapse(elems: JQuery): void {
     // More information here: https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/#avoid-layout-thrashing
     for (const {elem, $content, message, message_height} of rows_to_resize) {
         const long_message = message_height > height_cutoff;
+        let $message_length_controller = $(elem).find(".message_length_controller");
+
         if (long_message) {
-            console.log($content);
-            // All long messages are flagged as such.
-            $content.addClass("could-be-condensed");
+            const $condense_and_collapse_button = $("<button>")
+            .addClass("message_expander")
+            .addClass("message_length_toggle")
+            .addClass("tippy-zulip-delayed-tooltip")
+            .attr("data-tooltip-template-id", "message-condenser-tooltip-template")
+
+            $message_length_controller.append($condense_and_collapse_button);
         } else {
-            $content.removeClass("could-be-condensed");
+            $message_length_controller.empty();
         }
 
         // If message.condensed is defined, then the user has manually
