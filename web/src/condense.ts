@@ -6,6 +6,7 @@ import * as message_lists from "./message_lists";
 import type {Message} from "./message_store";
 import * as message_viewport from "./message_viewport";
 import * as rows from "./rows";
+import render_message_expender from "../templates/message_expander.hbs";
 
 
 /*
@@ -21,13 +22,11 @@ This library implements two related, similar concepts:
 */
 
 function show_more_link($row: JQuery): void {
-    $row.find(".message_condenser").hide();
-    $row.find(".message_expander").show();
+    $row.find(".message_expander").text("Show more");
 }
 
 function show_condense_link($row: JQuery): void {
-    $row.find(".message_expander").hide();
-    $row.find(".message_condenser").show();
+    $row.find(".message_expander").text("Show less");
 }
 
 function condense_row($row: JQuery): void {
@@ -161,21 +160,9 @@ export function hide_message_expander($row: JQuery): void {
     }
 }
 
-export function hide_message_condenser($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_condenser").hide();
-    }
-}
-
 export function show_message_expander($row: JQuery): void {
     if ($row.find(".could-be-condensed").length !== 0) {
         $row.find(".message_expander").show();
-    }
-}
-
-export function show_message_condenser($row: JQuery): void {
-    if ($row.find(".could-be-condensed").length !== 0) {
-        $row.find(".message_condenser").show();
     }
 }
 
@@ -226,13 +213,7 @@ export function condense_and_collapse(elems: JQuery): void {
         let $message_length_controller = $(elem).find(".message_length_controller");
 
         if (long_message) {
-            const $condense_and_collapse_button = $("<button>")
-            .addClass("message_expander")
-            .addClass("message_length_toggle")
-            .addClass("tippy-zulip-delayed-tooltip")
-            .attr("data-tooltip-template-id", "message-condenser-tooltip-template")
-
-            $message_length_controller.append($condense_and_collapse_button);
+            $message_length_controller.html(render_message_expender());
         } else {
             $message_length_controller.empty();
         }
@@ -253,8 +234,7 @@ export function condense_and_collapse(elems: JQuery): void {
             // By default, condense a long message.
             condense_row($(elem));
         } else {
-            $content.removeClass("condensed");
-            $(elem).find(".message_expander").hide();
+            $(elem).find(".message_expander").text("Show less");
         }
 
         // Completely hide the message and replace it with a "Show more"

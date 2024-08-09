@@ -446,7 +446,6 @@ function edit_message($row, raw_content) {
     const message = message_lists.current.get(rows.id($row));
     $row.find(".message_reactions").hide();
     condense.hide_message_expander($row);
-    condense.hide_message_condenser($row);
 
     // We potentially got to this function by clicking a button that implied the
     // user would be able to edit their message.  Give a little bit of buffer in
@@ -801,11 +800,9 @@ export function end_message_row_edit($row) {
         message_lists.current.hide_edit_message($row);
         compose_call.abort_video_callbacks(message.id);
     }
-    if ($row.find(".condensed").length !== 0) {
-        condense.show_message_expander($row);
-    } else {
-        condense.show_message_condenser($row);
-    }
+
+    condense.show_message_expander($row);
+    
     $row.find(".message_reactions").show();
 
     // We have to blur out text fields, or else hotkeys.js
