@@ -170,21 +170,32 @@ export function initialize(): void {
 
     tippy.delegate("body", {
         target: "#compose-send-button",
-        delay: EXTRA_LONG_HOVER_DELAY,
+        delay: 0,
         // By default, tippyjs uses a trigger value of "mouseenter focus",
         // but by specifying "mouseenter", this will prevent showing the
         // Send tooltip when tabbing to the Send button.
         trigger: "mouseenter",
         appendTo: () => document.body,
-        onShow(instance) {
-            // Don't show Send button tooltip if the popover is displayed.
-            if (popover_menus.is_scheduled_messages_popover_displayed()) {
-                return false;
+        onTrigger(instance) {
+            const content = compose_validate.warn_user_if_message_invalid();
+
+            if (content) {
+                instance.setProps({delay: 0});
+                instance.setContent(content);
+                return;
             }
+
+            instance.setProps({delay: EXTRA_LONG_HOVER_DELAY});
             if (user_settings.enter_sends) {
                 instance.setContent(parse_html($("#send-enter-tooltip-template").html()));
             } else {
                 instance.setContent(parse_html($("#send-ctrl-enter-tooltip-template").html()));
+            }
+        },
+        onShow() {
+            // Don't show Send button tooltip if the popover is displayed.
+            if (popover_menus.is_scheduled_messages_popover_displayed()) {
+                return false;
             }
             return undefined;
         },

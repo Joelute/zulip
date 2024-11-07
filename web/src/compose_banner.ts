@@ -60,6 +60,7 @@ export const CLASSNAMES = {
     zephyr_not_running: "zephyr_not_running",
     generic_compose_error: "generic_compose_error",
     user_not_subscribed: "user_not_subscribed",
+    empty_compose_message: "empty_compose_message",
 };
 
 export function get_compose_banner_container($textarea: JQuery): JQuery {

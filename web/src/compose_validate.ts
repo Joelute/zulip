@@ -42,6 +42,22 @@ type StreamWildcardOptions = {
     stream_wildcard_mention: string | null;
 };
 
+const INVALID_CHANNEL_MESSAGE = {
+    channel_required: $t({
+        defaultMessage: "Please specify a channel.",
+    }),
+    topic_required: $t({
+        defaultMessage: "Topics are required in this organization.",
+    }),
+
+    missing_direct_message_recipient: $t({
+        defaultMessage: "Please specify a valid recipient.",
+    }),
+    empty_compose_message: $t({
+        defaultMessage: "Compose a message.",
+    }),
+};
+
 export let wildcard_mention_threshold = 15;
 
 export function set_upload_in_progress(status: boolean): void {
@@ -585,7 +601,7 @@ function validate_stream_message(scheduling_message: boolean): boolean {
     const $banner_container = $("#compose_banners");
     if (stream_id === undefined) {
         compose_banner.show_error_message(
-            $t({defaultMessage: "Please specify a channel."}),
+            INVALID_CHANNEL_MESSAGE.channel_required,
             compose_banner.CLASSNAMES.missing_stream,
             $banner_container,
             $("#compose_select_recipient_widget_wrapper"),
@@ -599,7 +615,7 @@ function validate_stream_message(scheduling_message: boolean): boolean {
         // `""` representation for i18n reasons, but have not yet done so.
         if (topic === "" || topic === "(no topic)") {
             compose_banner.show_error_message(
-                $t({defaultMessage: "Topics are required in this organization."}),
+                INVALID_CHANNEL_MESSAGE.topic_required,
                 compose_banner.CLASSNAMES.topic_missing,
                 $banner_container,
                 $("input#stream_message_recipient_topic"),
@@ -653,7 +669,7 @@ function validate_private_message(): boolean {
 
     if (compose_state.private_message_recipient().length === 0) {
         compose_banner.show_error_message(
-            $t({defaultMessage: "Please specify at least one valid recipient."}),
+            INVALID_CHANNEL_MESSAGE.missing_direct_message_recipient,
             compose_banner.CLASSNAMES.missing_private_message_recipient,
             $banner_container,
             $("#private_message_recipient"),
@@ -758,8 +774,14 @@ export function validate_message_length(): boolean {
 
 export function validate(scheduling_message: boolean): boolean {
     const message_content = compose_state.message_content();
+    const $banner_container = $("#compose_banners");
     if (/^\s*$/.test(message_content)) {
-        $("textarea#compose-textarea").toggleClass("invalid", true);
+        compose_banner.show_error_message(
+            INVALID_CHANNEL_MESSAGE.empty_compose_message,
+            compose_banner.CLASSNAMES.empty_compose_message,
+            $banner_container,
+            $("textarea#compose-textarea"),
+        );
         return false;
     }
 
@@ -807,4 +829,34 @@ export function convert_mentions_to_silent_in_direct_messages(
 
     const silent_mention_text = people.get_mention_syntax(full_name, user_id, true);
     return silent_mention_text;
+}
+
+export function warn_user_if_message_invalid(): string | undefined {
+    if (
+        compose_state.private_message_recipient().length === 0 &&
+        compose_state.get_message_type() === "private"
+    ) {
+        return INVALID_CHANNEL_MESSAGE.missing_direct_message_recipient;
+    }
+
+    const stream_id = compose_state.stream_id();
+    if (stream_id === undefined) {
+        return INVALID_CHANNEL_MESSAGE.channel_required;
+    }
+
+    if (realm.realm_mandatory_topics) {
+        const topic = compose_state.topic();
+        // TODO: We plan to migrate the empty topic to only using the
+        // `""` representation for i18n reasons, but have not yet done so.
+        if (topic === "" || topic === "(no topic)") {
+            return INVALID_CHANNEL_MESSAGE.topic_required;
+        }
+    }
+
+    const message_content = compose_state.message_content();
+    if (message_content.length === 0) {
+        return INVALID_CHANNEL_MESSAGE.empty_compose_message;
+    }
+
+    return undefined;
 }
